@@ -42,24 +42,43 @@ public class LazyComputer {
 				workerIdx++)));
 	}
 
+	/**
+	 * Add a number to the list to compute
+	 * 
+	 * @param number
+	 */
 	public synchronized void addNumber(double number) {
 		list.add(number);
 	}
 
+	/**
+	 * Get at most NUMBER_TO_COMPUTE numbers
+	 * 
+	 * @return
+	 */
 	public synchronized List<Double> getNumbersToCompute() {
 		List<Double> numberToCompute = new ArrayList<Double>();
 		if (list.size() > 1) {
+			// If more than one numbers, get up to NUMBER_TO_COMPUTE
 			int i = 0;
 			while (i < NUMBER_TO_COMPUTE && !list.isEmpty()) {
 				numberToCompute.add(list.poll());
 				i++;
 			}
 		} else if (list.size() == 1) {
+			// If only one number left, it's possible that it is the final sum.
+			// So do not remove
 			numberToCompute.add(list.peek());
 		}
 		return numberToCompute;
 	}
 
+	/**
+	 * Check all worker thread pending status to see if any worker is waiting
+	 * for result
+	 * 
+	 * @return
+	 */
 	private synchronized boolean hasPending() {
 		for (int i = 0; i < pendingResult.length; i++) {
 			if (pendingResult[i])
@@ -72,6 +91,9 @@ public class LazyComputer {
 		pendingResult[workerId] = pending;
 	}
 
+	/**
+	 * Start worker threads, and print result after all workers are done
+	 */
 	public void start() {
 		// Start worker thread
 		for (int i = 0; i < workerPool.size(); i++) {
@@ -86,9 +108,13 @@ public class LazyComputer {
 			}
 		}
 
+		// The only number left in the list should be the final result
 		System.out.println("The sum of the list is: " + list.peek());
 	}
 
+	/**
+	 * Worker thread handles all computing
+	 */
 	private class WorkerRunnable implements Runnable {
 
 		final int workerPort;
@@ -110,17 +136,21 @@ public class LazyComputer {
 						workerSocket.getOutputStream());
 				ObjectInputStream oin = new ObjectInputStream(
 						workerSocket.getInputStream());
-				//System.out.println("Connnected to "
-				//		+ workerSocket.getRemoteSocketAddress().toString());
+
 				while (true) {
 					ComputeUnit unit = new ComputeUnit();
 					List<Double> numbers = getNumbersToCompute();
 					boolean hasPending = hasPending();
 					if (numbers.size() == 1 && !hasPending) {
+						// If only one number left and no worker is working, we
+						// get result
 						break;
 					} else if (numbers.size() == 1 && hasPending) {
+						// If only one number left but there are other workers
+						// working, check back later
 						continue;
 					} else if (numbers.size() == 0) {
+						// If there is no number left, check back later
 						continue;
 					}
 					unit.addNumbersToCompute(numbers);

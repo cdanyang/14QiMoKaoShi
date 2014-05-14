@@ -35,6 +35,7 @@ public class WorkerComputer implements Runnable {
 				}
 			}
 		} else if (arg >= 10000) {
+			// It's port number
 			WorkerComputer worker = new WorkerComputer(arg);
 			worker.run();
 		} else {
@@ -55,6 +56,7 @@ public class WorkerComputer implements Runnable {
 					conn.getOutputStream());
 			ObjectInputStream oin = new ObjectInputStream(conn.getInputStream());
 			while (true) {
+				// Read numbers to compute and write result back
 				ComputeUnit unit = (ComputeUnit) oin.readObject();
 				double sum = 0;
 				for (int i = 0; i < unit.numbersToCompute.size(); i++) {
